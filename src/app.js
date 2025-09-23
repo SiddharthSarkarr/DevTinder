@@ -1,80 +1,89 @@
 const express = require('express');
-
+const connectDB = require('./config/databsase');
+const User = require('./model/user')
 const app = express();
-const { adminAuth } = require('./middleware/adminAuth');
 
-// next() concepts
-app.use("/user",
-    (req,res, next) =>{
-        console.log("heyy");
-        // res.send("hii")
-        next();
-    },
-    (req, res) =>{
-        console.log("hello")
-        res.send("next function called")
-    }
-) 
-// next() concepts
+app.use(express.json())
 
+app.post('/signup', async(req,res) =>{
 
-// middleware concepts
+    // console.log(req.body)
 
-// app.use('/admin', adminAuth)
-
-app.get('/admin/getData',adminAuth, (req, res) =>{
-    // const token ='xyz';
-    // const isAuth = token === 'xyz';
-    // if(isAuth){
-    //     console.log("Data sent successfully");
-    //     res.send("Sent Data !!!");
-    // }else{
-    //     res.status(401).send("Unauthorized error")
+    // const userObj = {
+    //     firstName : "Siddharth",
+    //     lastName: "Sarkarr",
+    //     email:"sidd@gmail.com",
+    //     password: "sidd@123"
     // }
-    console.log("Data sent successfully");
-    res.send("Sent Data !!!");
-    
+
+    const userObj = req?.body
+
+    const userModel = new User(userObj);
+    await userModel.save();
+    res.send("data added succesfully")
 })
 
-app.post('/admin/deleteData', (req, res) =>{
-    console.log("Data deleted successfully");
-    res.send("Deleted Data !!!");
+app.post('/user', async(req,res) =>{
+    // console.log(req.body)
+    const userObj = req?.body
+
+    // get all data from mongodb database
+    const getData = await User.find();
+    // console.log("getData",getData);
+
+    // get all rows from database woth same email
+    const getDataByEmail = await User.find({email: req?.body?.emailID});
+    // console.log("getDataByEmail",getDataByEmail);
+
+    // get single rows from database woth same email
+    const getSingleDataByEmail = await User.findOne({email: req?.body?.emailID});
+    console.log("getSingleDataByEmail",getSingleDataByEmail);
+
+    res.send("data fetched succesfully")
 })
 
-// middleware concepts
 
+app.post("/deleteUser", async(req, res) =>{
 
-// error handling concepts
+    const payload = req.body;
 
-// Method 1:
-    // app.get('/getUserData', (req, res) =>{
-    //     // logic to fetch data from Databse
-    //     throw new Error("static error - fcgnjd")
-    //     res.send("User data sent")
-    // })
-
-    // app.get('/', (err, req, res, next) =>{
-    //     if(err){
-    //         res.status(500).send("something went wrong")
-    //     }
-    // })
-
-// Method 2:
-app.get('/getUserData', (req, res) =>{
-    // logic to fetch data from Databse
-    try {
-        throw new Error("static error - fcgnjd")
-        res.send("User data sent")
-    } catch (error) {
+    let deletedEmail;
+    try{
+        deletedEmail = await User.deleteOne({firstName : payload?.firstName})
+    }catch(err){
         res.status(500).send("something went wrong")
     }
     
+    console.log("deletedEmail",deletedEmail);
+    res.send("User deleted successfully")
 })
 
-// error handling concepts
+app.patch("/updateUser", async(req, res) =>{
+    const payload = req?.body;
 
- 
+    // updating by findByIdAndUpdate
+    // const updateUser = await User.findByIdAndUpdate(req?.body?.id, {email: "siddkumar@gmail.com"});
+    // console.log("updateuser", updateUser);
 
-app.listen(1234, () =>{
-    console.log("Server is successfully connected on port 1234.")
-});
+    // updating by user email
+    const updateUser = await User.findOne({email : payload?.email}).updateOne({email : payload?.updatedEmail})
+    console.log("updateuser", updateUser);
+
+    res.send("User updated successfully")
+    
+})
+
+
+connectDB()
+    .then(() => {
+        console.log("Database connected successfully!!")
+        app.listen(1234, () =>{
+            console.log("Server is successfully connected on port 1234.")
+        });
+    })
+    .catch(() => console.log("Database connection error !!"))
+
+
+// app.listen(1234, () =>{
+//     console.log("Server is successfully connected on port 1234.")
+// });
