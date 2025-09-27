@@ -2,11 +2,14 @@ const express = require('express');
 const connectDB = require('./config/databsase');
 const User = require('./model/user')
 const app = express();
+const { signupValidatore } = require('./utils/validator')
+const bcrypt  = require('bcrypt');
+const validator = require('validator')
 
 app.use(express.json())
 
 app.post('/signup', async(req,res) =>{
-
+    
     // console.log(req.body)
 
     // const userObj = {
@@ -16,14 +19,49 @@ app.post('/signup', async(req,res) =>{
     //     password: "sidd@123"
     // }
 
-    const userObj = req?.body
+    const {firstName, lastName, email, password} = req.body
+
+    const hashPassword = await bcrypt.hash(password, 10);
+    
+    // const userObj = req?.body
+    const userObj = {firstName, lastName, email, password: hashPassword}
 
     try{
+        signupValidatore(req);
+
         const userModel = new User(userObj);
         await userModel.save();
         res.send("data added succesfully")
     }catch(err){
-        res.status(500).send("Failed----" + err)
+        res.status(500).send(err.message)
+    }
+    
+})
+
+app.post('/login', async(req,res) => {
+
+    const {email, password} = req.body;
+
+    try{
+        
+        const getHash = await User.findOne({email: email}) 
+        // console.log("getHash",getHash);
+
+        if(!validator.isEmail(email) || !getHash?.email){
+            throw new Error("Invalid Credentials.")
+        }
+
+        const isPassword = await bcrypt.compare(password, getHash?.password )
+        
+        if(!isPassword){
+            throw new Error("Invalid Credentials.")
+        }else{
+            res.send('Login successfully')
+        }
+
+
+    }catch(err){
+        res.status(400).send(err.message)
     }
     
 })
