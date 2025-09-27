@@ -18,9 +18,14 @@ app.post('/signup', async(req,res) =>{
 
     const userObj = req?.body
 
-    const userModel = new User(userObj);
-    await userModel.save();
-    res.send("data added succesfully")
+    try{
+        const userModel = new User(userObj);
+        await userModel.save();
+        res.send("data added succesfully")
+    }catch(err){
+        res.status(500).send("Failed----" + err)
+    }
+    
 })
 
 app.post('/user', async(req,res) =>{
